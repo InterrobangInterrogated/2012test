@@ -1,4 +1,4 @@
-this is a Roblox client dated May 17th 2012 that was taken from https://archive.roblonium.com/Client/Windows/RobloxApp/2012/5.2012
+this is a version of Roblox Studio from 2012 that was taken from https://archive.roblonium.com
 
 some dlls were taken from other clients as they were missing in this one
 
