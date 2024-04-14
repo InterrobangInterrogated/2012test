@@ -1,0 +1,76 @@
+#include "materials/programs/include/common.cgh"
+
+/************* DATA STRUCTS **************/
+
+struct AppdataTerrain {
+    float3 Position	: POSITION;
+    float3 Normal	: NORMAL;
+    float2 UvHigh	: TEXCOORD0;
+    float2 UvLow	: TEXCOORD1;
+};
+
+/* data passed from vertex shader to pixel shader */
+struct MCVertexOutput {
+    float4 HPosition   : POSITION;
+    float2 UvHigh      : TEXCOORD0;
+    float2 UvLow       : TEXCOORD1;
+    float3 LightingColor : COLOR0;
+	float4 WorldView   : TEXCOORD2;
+};
+
+/*********** vertex shader ******/
+	uniform float4x4 WvpXf;
+	uniform float4x4 WvXf;
+	uniform float4x4 WorldXf;
+    uniform float4 Lamp0Pos;
+    uniform float4 Lamp1Pos;
+    uniform float3 AmbientLight;
+    uniform float3 Lamp0Color;
+    uniform float3 Lamp1Color;
+
+MCVertexOutput MegaClusterVS(AppdataTerrain IN)
+{
+    MCVertexOutput OUT = (MCVertexOutput)0;
+		
+	float4 Po = float4(IN.Position.xyz,1);
+    float4 Pw = mul(WorldXf, Po);
+
+	OUT.HPosition = mul(WvpXf,Po);
+	OUT.UvHigh = IN.UvHigh;
+	OUT.UvLow = IN.UvLow;
+	OUT.LightingColor = saturate(dot(IN.Normal, normalize(Lamp0Pos.xyz - Lamp0Pos.w * Pw.xyz))) * Lamp0Color + saturate(dot(IN.Normal, normalize(Lamp1Pos.xyz - Lamp1Pos.w * Pw.xyz))) * Lamp1Color + AmbientLight * 0.5;
+	
+	OUT.WorldView.xyz = 0;	
+	OUT.WorldView.w = -vs_compute_gbuffer_depth(IN.Position, WvXf) / GBUFFER_MAX_DEPTH;
+
+	return OUT;
+}
+
+void MegaClusterPS(MCVertexOutput IN,
+		uniform sampler2D HighSamp,
+		uniform sampler2D LowSamp,
+		uniform float4 FogParams,
+		uniform float4 FogColour,
+#ifdef GBUFFER		
+		out float4 oColor1 : COLOR1,
+#endif
+		out float4 oColor : COLOR0
+	)
+{
+	float4 high = tex2D(HighSamp, IN.UvHigh);
+	float4 low = tex2D(LowSamp, IN.UvLow);
+
+	float3 base = lerp(low.rgb, high.rgb, high.a);
+
+ 	float3 lighting = IN.LightingColor;
+	float3 result = base * lighting;
+
+	float fogAlpha = clamp( ( FogParams.z - ( IN.WorldView.w * 500.0 ) ) * FogParams.w, 0.0, 1.0 );
+	
+	oColor = float4( result, 1.0 ); 
+	oColor = lerp( FogColour, oColor, fogAlpha );
+    
+	#ifdef GBUFFER
+		oColor1 = packDeferred( lerp( 1.0, IN.WorldView.w, fogAlpha ), lighting, 0 );
+	#endif
+}
