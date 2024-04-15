@@ -1,4 +1,4 @@
-this is a version of Roblox Studio from 2012 that was taken from https://archive.roblonium.com
+this is a version of Roblox Studio from 2012 that was taken from https://archive.roblonium.com/Client/Windows/RobloxStudio/main%20%28roblox.com%29/2012/9.2012/September%2013%20%280.72.0.676%29/version-08d8164925014a95/
 
 some dlls were taken from other clients as they were missing in this one
 
